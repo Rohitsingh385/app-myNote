@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>my notes</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.13.2/dist/axios.min.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #F7F4EF;
+      --surface: #FFFFFF;
+      --border: rgba(0, 0, 0, 0.08);
+      --border-md: rgba(0, 0, 0, 0.14);
+      --text: #1A1917;
+      --muted: #7A7672;
+      --hint: #B5B0AA;
+      --accent: #5B47E0;
+      --accent-lt: #EEEDFE;
+
+      --y-bg: #FFFBEA;
+      --y-bd: #E8C84E;
+      --p-bg: #F3EFFE;
+      --p-bd: #9F8FE0;
+      --t-bg: #E6F7F2;
+      --t-bd: #4DBFA0;
+      --k-bg: #FDE8F3;
+      --k-bd: #D96AAE;
+      --b-bg: #E8F2FD;
+      --b-bd: #6BAEE8;
+      --s-bg: #F2F0EB;
+      --s-bd: #B0AAA0;
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --radius-xl: 26px;
+    }
+
+    html {
+      font-size: 16px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0;
+    }
+
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 20% 20%, rgba(91, 71, 224, 0.04) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(77, 191, 160, 0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 5rem;
+    }
+
+    .header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 2.5rem;
+    }
+
+    .header-left h1 {
+      font-family: 'Instrument Serif', serif;
+      font-style: italic;
+      font-size: clamp(2.2rem, 5vw, 3rem);
+      font-weight: 400;
+      line-height: 1;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    .header-left p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+      font-weight: 300;
+    }
+
+    .note-count {
+      background: var(--text);
+      color: var(--bg);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 99px;
+      letter-spacing: 0.04em;
+      transition: background 0.3s ease;
+    }
+
+    .input-card {
+      background: var(--surface);
+      border-radius: var(--radius-xl);
+      border: 0.5px solid var(--border-md);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+      transition: box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+
+    .input-card:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(91, 71, 224, 0.1);
+    }
+
+    .input-top {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .input-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent-lt);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    .input-icon svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--accent);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    textarea {
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      resize: none;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 300;
+      color: var(--text);
+      line-height: 1.7;
+      height: 72px;
+    }
+
+    textarea::placeholder {
+      color: var(--hint);
+    }
+
+    .input-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 0.5px solid var(--border);
+    }
+
+    .swatches {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .swatch-label {
+      font-size: 11px;
+      color: var(--hint);
+      margin-right: 2px;
+    }
+
+    .swatch {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s ease;
+      outline: none;
+    }
+
+    .swatch:hover {
+      transform: scale(1.3);
+    }
+
+    .swatch.active {
+      transform: scale(1.2);
+      border-color: var(--text);
+    }
+
+    .swatch[data-color="yellow"] {
+      background: var(--y-bd);
+    }
+
+    .swatch[data-color="purple"] {
+      background: var(--p-bd);
+    }
+
+    .swatch[data-color="teal"] {
+      background: var(--t-bd);
+    }
+
+    .swatch[data-color="pink"] {
+      background: var(--k-bd);
+    }
+
+    .swatch[data-color="blue"] {
+      background: var(--b-bd);
+    }
+
+    .swatch[data-color="stone"] {
+      background: var(--s-bd);
+    }
+
+    .add-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 99px;
+      padding: 9px 22px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    }
+
+    .add-btn:hover {
+      background: #4738C7;
+      box-shadow: 0 4px 16px rgba(91, 71, 224, 0.3);
+    }
+
+    .add-btn:active {
+      transform: scale(0.96);
+      box-shadow: none;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 1.75rem;
+    }
+
+    .filter-btn {
+      padding: 6px 16px;
+      border-radius: 99px;
+      border: 0.5px solid var(--border-md);
+      background: transparent;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .filter-btn:hover {
+      background: var(--surface);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+
+    .filter-btn.active {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--hint);
+      padding: 0 4px;
+      margin-bottom: 10px;
+      margin-top: 8px;
+    }
+
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 14px;
+    }
+
+    .note {
+      border-radius: var(--radius-lg);
+      padding: 1.1rem 1.2rem;
+      border: 0.5px solid transparent;
+      position: relative;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      cursor: default;
+      animation: noteIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    @keyframes noteIn {
+      from {
+        opacity: 0;
+        transform: scale(0.82) translateY(16px);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .note:hover {
+      transform: translateY(-4px) rotate(0.6deg);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.10);
+    }
+
+    .note.removing {
+      animation: noteOut 0.32s ease forwards;
+    }
+
+    @keyframes noteOut {
+      from {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      to {
+        opacity: 0;
+        transform: scale(0.78) translateY(10px);
+      }
+    }
+
+    .note[data-color="yellow"] {
+      background: var(--y-bg);
+      border-color: var(--y-bd);
+    }
+
+    .note[data-color="purple"] {
+      background: var(--p-bg);
+      border-color: var(--p-bd);
+    }
+
+    .note[data-color="teal"] {
+      background: var(--t-bg);
+      border-color: var(--t-bd);
+    }
+
+    .note[data-color="pink"] {
+      background: var(--k-bg);
+      border-color: var(--k-bd);
+    }
+
+    .note[data-color="blue"] {
+      background: var(--b-bg);
+      border-color: var(--b-bd);
+    }
+
+    .note[data-color="stone"] {
+      background: var(--s-bg);
+      border-color: var(--s-bd);
+    }
+
+    .pin-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      color: #6B4F0A;
+      background: rgba(250, 200, 117, 0.5);
+      border-radius: 4px;
+      padding: 2px 7px;
+      backdrop-filter: blur(2px);
+    }
+
+    .note-text {
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.65;
+      color: #1A1917;
+      flex: 1;
+      word-break: break-word;
+      white-space: pre-wrap;
+      padding-right: 4px;
+    }
+
+    .note-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .note-time {
+      font-size: 11px;
+      color: rgba(26, 25, 23, 0.35);
+      font-weight: 300;
+    }
+
+    .note-actions {
+      display: flex;
+      gap: 4px;
+    }
+
+    .icon-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .icon-btn:hover {
+      transform: scale(1.2);
+    }
+
+    .icon-btn svg {
+      width: 13px;
+      height: 13px;
+      fill: none;
+      stroke: rgba(26, 25, 23, 0.45);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .pin-btn:hover svg {
+      stroke: #9A6F0A;
+    }
+
+    .pin-btn:hover {
+      background: rgba(250, 200, 100, 0.25);
+    }
+
+    .pin-btn.pinned svg {
+      stroke: #9A6F0A;
+      fill: #FAC875;
+    }
+
+    .del-btn:hover svg {
+      stroke: #A32D2D;
+    }
+
+    .del-btn:hover {
+      background: rgba(255, 100, 100, 0.12);
+    }
+
+    /* ─── Empty state ─── */
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 4rem 2rem;
+      animation: fadeUp 0.5s ease both;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .empty-icon {
+      font-size: 2.5rem;
+      margin-bottom: 12px;
+      display: block;
+      animation: bob 2.5s ease-in-out infinite;
+    }
+
+    @keyframes bob {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
+    .empty p {
+      font-size: 14px;
+      color: var(--hint);
+      font-weight: 300;
+    }
+
+    .kbd-hint {
+      font-size: 11px;
+      color: var(--hint);
+      margin-top: 6px;
+      padding-left: 44px;
+    }
+
+    kbd {
+      background: rgba(0, 0, 0, 0.06);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-md);
+      border-radius: 99px;
+    }
+
+    @media (max-width: 500px) {
+      .app {
+        padding: 2rem 1rem 4rem;
+      }
+
+      .notes-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .notes-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1>my notes</h1>
+        <p>capture every thought</p>
+      </div>
+      <div class="note-count" id="noteCount">0 notes</div>
+    </header>
+
+    <!-- Input area -->
+    <div class="input-card">
+      <div class="input-top">
+        <div class="input-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </div>
+        <textarea id="noteInput" placeholder="what's on your mind?"></textarea>
+      </div>
+      <p class="kbd-hint">press <kbd>Ctrl</kbd> + <kbd>Enter</kbd> to add</p>
+      <div class="input-bottom">
+        <div class="swatches">
+          <span class="swatch-label">color</span>
+          <button class="swatch active" data-color="yellow" aria-label="yellow" onclick="setColor('yellow')"></button>
+          <button class="swatch" data-color="purple" aria-label="purple" onclick="setColor('purple')"></button>
+          <button class="swatch" data-color="teal" aria-label="teal" onclick="setColor('teal')"></button>
+          <button class="swatch" data-color="pink" aria-label="pink" onclick="setColor('pink')"></button>
+          <button class="swatch" data-color="blue" aria-label="blue" onclick="setColor('blue')"></button>
+          <button class="swatch" data-color="stone" aria-label="stone" onclick="setColor('stone')"></button>
+        </div>
+        <button class="add-btn" onclick="addNote()">add note</button>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">all</button>
+      <button class="filter-btn" data-filter="pinned" onclick="setFilter('pinned')">pinned</button>
+      <button class="filter-btn" data-filter="yellow" onclick="setFilter('yellow')">yellow</button>
+      <button class="filter-btn" data-filter="purple" onclick="setFilter('purple')">purple</button>
+      <button class="filter-btn" data-filter="teal" onclick="setFilter('teal')">teal</button>
+      <button class="filter-btn" data-filter="pink" onclick="setFilter('pink')">pink</button>
+      <button class="filter-btn" data-filter="blue" onclick="setFilter('blue')">blue</button>
+    </div>
+
+    <!-- Notes output -->
+    <div id="output"></div>
+
+  </div>
+
+  <script>
+
+
+    let activeColor = 'yellow';
+    let activeFilter = 'all';
+    let nextId = 5;
+
+
+    function ts() {
+      return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function esc(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
+
+    function setColor(c) {
+      activeColor = c;
+      document.querySelectorAll('.swatch').forEach(s => {
+        s.classList.toggle('active', s.dataset.color === c);
+      });
+    }
+
+
+    function setFilter(f) {
+      activeFilter = f;
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.filter === f);
+      });
+      render();
+    }
+
+
+    function addNote() {
+      const ta = document.getElementById('noteInput');
+      const text = ta.value.trim();
+      if (!text) { ta.focus(); return; }
+
+
+      axios.post('http://localhost:8080/note', {
+        ncontent: text,
+        ncolor: activeColor,
+        npinned: false
+      }, {
+        headers: {
+          authorization: localStorage.getItem("token")
+        }
+      })
+
+      ta.value = '';
+      ta.focus();
+      render();
+    }
+
+
+   async function deleteNote(id) {
+      const card = document.querySelector(`[data-id="${id}"]`);
+      if (!card) return;
+      card.classList.add('removing');
+      console.log(card);
+      await axios.delete('http://localhost:8080/notes/card', {
+        headers: {
+          authorization: localStorage.getItem("token")
+        }
+      })
+    }
+
+    function togglePin(id) {
+      const n = notes.find(n => n.id === id);
+      if (n) { n.pinned = !n.pinned; render(); }
+    }
+
+    const pinSVG = `<svg viewBox="0 0 24 24"><path d="M12 2l3 7h5l-4 4 1.5 7L12 17l-5.5 3L8 13 4 9h5z"/></svg>`;
+    const delSVG = `<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>`;
+
+    function cardHTML(n) {
+      return `
+      <div class="note" data-id="${n.id}" data-color="${n.color}">
+        ${n.pinned ? '<span class="pin-badge">pinned</span>' : ''}
+        <div class="note-text">${esc(n.content)}</div>
+        <div class="note-footer">
+          <span class="note-time">${n.time}</span>
+          <div class="note-actions">
+            <button class="icon-btn pin-btn ${n.pinned ? 'pinned' : ''}"
+              onclick="togglePin(${n.id})" title="pin note">
+              ${pinSVG}
+            </button>
+            <button class="icon-btn del-btn"
+              onclick="deleteNote(${n.id})" title="delete note">
+              ${delSVG}
+            </button>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    async function render() {
+
+      let notes = await axios.get('http://localhost:8080/notes', {
+        headers: {
+          authorization: localStorage.getItem('token')
+        }
+      })
+      let filtered = notes.data.notes
+      // console.log(filtered);
+
+      if (activeFilter === 'pinned') filtered = notes.filter(n => n.pinned);
+      else if (activeFilter !== 'all') filtered = notes.filter(n => n.color === activeFilter);
+
+      const pinned = await filtered.filter(n => n.pinned);
+      const unpinned = await filtered.filter(n => !n.pinned);
+
+      const total = notes.length;
+      //console.log(total);
+
+      document.getElementById('noteCount').textContent =
+        total === 1 ? '1 note' : `${total} notes`;
+
+      if (!filtered.length) {
+        document.getElementById('output').innerHTML = `
+        <div class="notes-grid">
+          <div class="empty">
+            <span class="empty-icon">✦</span>
+            <p>nothing here yet — start writing!</p>
+          </div>
+        </div>`;
+        return;
+      }
+
+      let html = '<div class="notes-grid">';
+
+      if (pinned.length) {
+        html += `<div class="section-label">pinned</div>`;
+        html += pinned.map(cardHTML).join('');
+      }
+      if (unpinned.length) {
+        if (pinned.length) html += `<div class="section-label">notes</div>`;
+        html += unpinned.map(cardHTML).join('');
+      }
+
+      html += '</div>';
+      document.getElementById('output').innerHTML = html;
+    }
+
+    document.getElementById('noteInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && e.ctrlKey) addNote();
+    });
+
+    render();
+  </script>
+</body>
+
+</html>
