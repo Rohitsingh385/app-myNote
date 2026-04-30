@@ -629,7 +629,7 @@
 
     let activeColor = 'yellow';
     let activeFilter = 'all';
-    let nextId = 5;
+    
 
 
     function ts() {
@@ -684,11 +684,12 @@
 
 
    async function deleteNote(id) {
+    //console.log(id)
       const card = document.querySelector(`[data-id="${id}"]`);
-      if (!card) return;
+      if (!card || !id) return;
       card.classList.add('removing');
-      console.log(card);
-      await axios.delete('http://localhost:8080/notes/card', {
+     
+      await axios.delete(`http://localhost:8080/notes/${id}`, {
         headers: {
           authorization: localStorage.getItem("token")
         }
@@ -704,19 +705,20 @@
     const delSVG = `<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>`;
 
     function cardHTML(n) {
+      
       return `
-      <div class="note" data-id="${n.id}" data-color="${n.color}">
+      <div class="note" data-id="${n._id}" data-color="${n.color}">
         ${n.pinned ? '<span class="pin-badge">pinned</span>' : ''}
         <div class="note-text">${esc(n.content)}</div>
         <div class="note-footer">
           <span class="note-time">${n.time}</span>
           <div class="note-actions">
             <button class="icon-btn pin-btn ${n.pinned ? 'pinned' : ''}"
-              onclick="togglePin(${n.id})" title="pin note">
+              onclick="togglePin('${n._id}')" title="pin note">
               ${pinSVG}
             </button>
             <button class="icon-btn del-btn"
-              onclick="deleteNote(${n.id})" title="delete note">
+              onclick="deleteNote('${n._id}')" title="delete note">
               ${delSVG}
             </button>
           </div>
@@ -734,8 +736,8 @@
       let filtered = notes.data.notes
       // console.log(filtered);
 
-      if (activeFilter === 'pinned') filtered = notes.filter(n => n.pinned);
-      else if (activeFilter !== 'all') filtered = notes.filter(n => n.color === activeFilter);
+      if (activeFilter === 'pinned') filtered = filtered.filter(n => n.pinned);
+      else if (activeFilter !== 'all') filtered = filtered.filter(n => n.color === activeFilter);
 
       const pinned = await filtered.filter(n => n.pinned);
       const unpinned = await filtered.filter(n => !n.pinned);

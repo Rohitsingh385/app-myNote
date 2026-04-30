@@ -83,9 +83,34 @@ app.post('/login', async (req, res) => {
 
 })
 
-app.delete('/notes/:id', auth, (req, res) => {
+app.delete('/notes/:id', auth, async(req, res) => {
+    const id = req.params.id;
+    console.log(id)
+    if(!id){
+        return res.status(204).json({message: 'content not found'})
+    }
+
+    const response = await noteModel.findByIdAndDelete(id)
+    if(response){
+        return res.status(201).json({message: 'note delted'})
+    }
+    else{
+        return res.status(500).json({message: 'something went wrong'})
+    }
+
+})
+
+app.put('/pin/:id', auth, (req, res) => {
     const id = req.query.id;
-    console.log(id);
+
+    if(!id){
+        return res.json({message: 'empmty id'})
+    }
+    const note = await noteModel.findById(id);
+    if(!note){
+        return res.json({message: 'empmty id'})
+    }
+    const updatedTodo = await noteModel.findByIdAndUpdate(id, )
 })
 
 app.put('/note/:id', auth, (req, res) => {
