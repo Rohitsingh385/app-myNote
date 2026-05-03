@@ -100,7 +100,7 @@ app.delete('/notes/:id', auth, async(req, res) => {
 
 })
 
-app.put('/pin/:id', auth, (req, res) => {
+app.put('/pin/:id', auth, async(req, res) => {
     const id = req.query.id;
 
     if(!id){
@@ -113,10 +113,6 @@ app.put('/pin/:id', auth, (req, res) => {
     const updatedTodo = await noteModel.findByIdAndUpdate(id, )
 })
 
-app.put('/note/:id', auth, (req, res) => {
-
-})
-
 
 // GET ROUTES
 // get notes auth
@@ -124,8 +120,6 @@ app.get('/notes', auth, async (req, res) => {
     const userNotes = await noteModel.find({ userId: req.userId });
     return res.status(200).json({ notes: userNotes })
 })
-
-
 
 // signup page
 app.get('/signup', (req, res) => {
