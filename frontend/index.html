@@ -570,10 +570,38 @@
         grid-template-columns: 1fr;
       }
     }
+
+    #footer {
+      display: flex;
+      position: fixed;
+      bottom: 0;
+      width: 100vw;
+      background-color: hsl(0, 0%, 100%);
+      padding: 20px 200px;
+      display: none;
+    }
+
+    .btnlog {
+      padding: 10px 10px;
+      background-color: var(--accent);
+      border-radius: 20px;
+      color: var(--accent-lt);
+      text-decoration: none;
+    }
+
+    .btnlog:hover {
+      background: #4738C7;
+      box-shadow: 0 4px 16px rgba(91, 71, 224, 0.3);
+    }
+
+    .btnlog:active {
+      transform: scale(0.96);
+      box-shadow: none;
+    }
   </style>
 </head>
 
-<body>
+<body onload="myFunction()">
 
   <div class="app">
 
@@ -626,8 +654,20 @@
     <div id="output"></div>
 
   </div>
-
+  <div id="footer">
+    <a class="btnlog" id="login" href="./login">Login</a>
+    <a class="btnlog" id="signup" href="./signup">Signup</a>
+  </div>
   <script>
+
+    function myFunction() {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        document.getElementById('footer').style.display = 'block'
+      } else {
+        document.getElementById('footer').style.display = 'none'
+      }
+    }
 
 
     let activeColor = 'yellow';
@@ -775,10 +815,11 @@
     }
 
     async function render() {
+      const token = localStorage.getItem('token');
 
       let notes = await axios.get('http://localhost:8080/notes', {
         headers: {
-          authorization: localStorage.getItem('token')
+          authorization: token
         }
       })
       let filtered = notes.data.notes
