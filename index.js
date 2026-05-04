@@ -5,6 +5,7 @@ const { auth, JWT_SECRET } = require('./authmiddleware')
 const { userModel, noteModel } = require('./model')
 const jwt = require('jsonwebtoken');
 const path = require('path')
+const bcrypt = require('bcrypt')
 app.use(express.json())
 
 
@@ -31,6 +32,13 @@ app.post('/note', auth, async (req, res) => {
 app.post('/signup', async (req, res) => {
     const { uname, uemail, upassword } = req.body;
 
+    if (!uname || !uemail || !upassword) {
+        return res.status(400).json({ message: 'username email password required' })
+    }
+
+    if (upassword.length < 8) {
+        return res.status(400).json({ message: 'password must be 8 characters' })
+    }
     // const checkExists = userModel.find(u => u.username === username);
     const chekExists = await userModel.findOne({ email: uemail })
     if (chekExists) {
@@ -38,10 +46,12 @@ app.post('/signup', async (req, res) => {
             message: ' user already exists'
         })
     }
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(upassword, salt);
     const newUser = await userModel.create({
         username: uname,
         email: uemail,
-        password: upassword
+        password: hashedPassword
     })
     const token = jwt.sign({
         userId: newUser._id
@@ -56,7 +66,15 @@ app.post('/signup', async (req, res) => {
 
 // singin
 app.post('/login', async (req, res) => {
-    const { uname, uemail, upassword } = req.body;
+    const { uemail, upassword } = req.body;
+
+    if (!uemail || !upassword) {
+        return res.status(400).json({ message: 'username email password required' })
+    }
+
+    if (upassword.length < 8) {
+        return res.status(400).json({ message: 'password must be 8 characters' })
+    }
     const token = req.headers.authorization;
 
 
@@ -67,8 +85,9 @@ app.post('/login', async (req, res) => {
             message: 'unauthorized access'
         })
     }
-
-    if (user.password === upassword) {
+   
+    const isPassword = await bcrypt.compare(upassword, user.password);
+    if (isPassword) {
         const token = jwt.sign({
             userId: user._id
         }, JWT_SECRET)
@@ -84,34 +103,34 @@ app.post('/login', async (req, res) => {
 
 })
 
-app.delete('/notes/:id', auth, async(req, res) => {
+app.delete('/notes/:id', auth, async (req, res) => {
     const id = req.params.id;
     console.log(id)
-    if(!id){
-        return res.status(204).json({message: 'content not found'})
+    if (!id) {
+        return res.status(204).json({ message: 'content not found' })
     }
 
     const response = await noteModel.findByIdAndDelete(id)
-    if(response){
-        return res.status(201).json({message: 'note delted'})
+    if (response) {
+        return res.status(201).json({ message: 'note delted' })
     }
-    else{
-        return res.status(500).json({message: 'something went wrong'})
+    else {
+        return res.status(500).json({ message: 'something went wrong' })
     }
 
 })
 
-app.put('/pin/:id', auth, async(req, res) => {
+app.put('/pin/:id', auth, async (req, res) => {
     const id = req.query.id;
 
-    if(!id){
-        return res.json({message: 'empmty id'})
+    if (!id) {
+        return res.json({ message: 'empmty id' })
     }
     const note = await noteModel.findById(id);
-    if(!note){
-        return res.json({message: 'empmty id'})
+    if (!note) {
+        return res.json({ message: 'empmty id' })
     }
-    const updatedTodo = await noteModel.findByIdAndUpdate(id, )
+    const updatedTodo = await noteModel.findByIdAndUpdate(id,)
 })
 
 
