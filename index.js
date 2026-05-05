@@ -6,6 +6,7 @@ const { userModel, noteModel } = require('./model')
 const jwt = require('jsonwebtoken');
 const path = require('path')
 const bcrypt = require('bcrypt')
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 app.use(express.json())
 
 
@@ -103,6 +104,48 @@ app.post('/login', async (req, res) => {
 
 })
 
+
+app.get('/subscribe', async(req,res)=> {
+
+    const plan = req.query.plan;
+  
+    
+    if(!plan){
+        return res.json({message: 'plan not found'})
+    }
+    let priceId;
+
+    switch(plan.toLowerCase()){
+        case 'pro':
+            priceId = 'price_1TThna9lXtYLLw8IhlOexiPY'
+            break
+        default:
+            return res.json({message: 'plan not found'})
+    }
+    const session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        line_items: [
+            {
+            price: priceId,
+            quantity: 1
+
+            }
+        ],
+        success_url: 'http://localhost:8080/success?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url: 'http://localhost:8080/cancel'
+    })
+    res.redirect(session.url)
+})
+
+app.get('/success', async(req,res)=> {
+    const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+
+    res.send('subscribed')
+})
+
+app.get('/cancel', (req,res)=> {
+    res.redirect('/')
+})
 app.delete('/notes/:id', auth, async (req, res) => {
     const id = req.params.id;
     console.log(id)

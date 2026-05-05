@@ -571,7 +571,8 @@
       }
     }
 
-    #footer {
+    #footer,
+    #sub-footer {
       display: flex;
       position: fixed;
       bottom: 0;
@@ -579,9 +580,10 @@
       background-color: hsl(0, 0%, 100%);
       padding: 20px 200px;
       display: none;
+      z-index: 100;
     }
 
-    .btnlog {
+    .btnlog, .pro-btn {
       padding: 10px 10px;
       background-color: var(--accent);
       border-radius: 20px;
@@ -589,12 +591,12 @@
       text-decoration: none;
     }
 
-    .btnlog:hover {
+    .btnlog,.pro-btn:hover {
       background: #4738C7;
       box-shadow: 0 4px 16px rgba(91, 71, 224, 0.3);
     }
 
-    .btnlog:active {
+    .btnlog, .pro-btn:active {
       transform: scale(0.96);
       box-shadow: none;
     }
@@ -658,14 +660,20 @@
     <a class="btnlog" id="login" href="./login">Login</a>
     <a class="btnlog" id="signup" href="./signup">Signup</a>
   </div>
+  <div id="sub-footer">
+    <a class="pro-btn" id="pro-btn" href="/subscribe?plan=pro">Go Pro</a>
+    <small>get access to all the features at just $1 per month</small>
+  </div>
   <script>
 
     function myFunction() {
       const token = localStorage.getItem('token')
       if (!token) {
         document.getElementById('footer').style.display = 'block'
+        document.getElementById('sub-footer').style.display = 'none'
       } else {
         document.getElementById('footer').style.display = 'none'
+        document.getElementById('sub-footer').style.display = 'block'
       }
     }
 
