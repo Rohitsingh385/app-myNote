@@ -86,7 +86,7 @@ app.post('/login', async (req, res) => {
             message: 'unauthorized access'
         })
     }
-   
+
     const isPassword = await bcrypt.compare(upassword, user.password);
     if (isPassword) {
         const token = jwt.sign({
@@ -105,46 +105,90 @@ app.post('/login', async (req, res) => {
 })
 
 
-app.get('/subscribe', async(req,res)=> {
+app.post('/subscribe', auth, async (req, res) => {
+    const { plan } = req.body;
 
-    const plan = req.query.plan;
-  
-    
-    if(!plan){
-        return res.json({message: 'plan not found'})
+    if (!plan || plan.toLowerCase() !== 'pro') {
+        return res.status(400).json({ message: 'invalid plan' });
     }
-    let priceId;
 
-    switch(plan.toLowerCase()){
-        case 'pro':
-            priceId = 'price_1TThna9lXtYLLw8IhlOexiPY'
-            break
-        default:
-            return res.json({message: 'plan not found'})
+    const user = await userModel.findById(req.userId);
+    if (!user) {
+        return res.status(404).json({ message: 'user not found' });
     }
+
+    let customer;
+    if (user.stripeCustomerId) {
+        customer = await stripe.customers.retrieve(user.stripeCustomerId);
+    } else {
+        customer = await stripe.customers.create({
+            email: user.email,
+            name: user.username,
+        });
+        user.stripeCustomerId = customer.id;
+        await user.save();
+    }
+
     const session = await stripe.checkout.sessions.create({
+        customer: customer.id,
         mode: 'subscription',
         line_items: [
             {
-            price: priceId,
-            quantity: 1
-
+                price: 'price_1TThna9lXtYLLw8IhlOexiPY',
+                quantity: 1
             }
         ],
         success_url: 'http://localhost:8080/success?session_id={CHECKOUT_SESSION_ID}',
         cancel_url: 'http://localhost:8080/cancel'
-    })
-    res.redirect(session.url)
+    });
+
+    res.json({ url: session.url });
 })
 
-app.get('/success', async(req,res)=> {
-    const session = await stripe.checkout.sessions.retrieve(req.query.session_id);
+app.get('/success', async (req, res) => {
+    const sessionId = req.query.session_id;
+    if (!sessionId) {
+        return res.status(400).send('Invalid session');
+    }
 
-    res.send('subscribed')
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (session.payment_status === 'paid') {
+        const customerId = session.customer;
+        const user = await userModel.findOne({ stripeCustomerId: customerId });
+        if (user) {
+            user.plan = 'pro';
+            await user.save();
+        }
+    }
+
+    res.redirect('http://localhost/');
 })
 
-app.get('/cancel', (req,res)=> {
+app.get('/user', auth, async (req, res) => {
+
+    const userId = req.userId;
+
+    const user = await userModel.find({ _id: userId }).select('-password');
+    //console.log(user)
+    res.status(201).json({ user })
+})
+
+app.get('/cancel', (req, res) => {
     res.redirect('/')
+})
+
+app.post('/billing-portal', auth, async (req, res) => {
+    const user = await userModel.findById(req.userId);
+    if (!user || !user.stripeCustomerId) {
+        return res.status(400).json({ message: 'no subscription' });
+    }
+
+    const portalSession = await stripe.billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+        return_url: 'http://localhost:8080/'
+    });
+
+    res.json({ url: portalSession.url });
 })
 app.delete('/notes/:id', auth, async (req, res) => {
     const id = req.params.id;
