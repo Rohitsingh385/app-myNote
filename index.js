@@ -2,6 +2,7 @@ require('dotenv').config()
 const express = require('express');
 const app = express();
 const { auth, JWT_SECRET } = require('./authmiddleware')
+const {checkPro} = require('./checkProStatus')
 const { userModel, noteModel } = require('./model')
 const jwt = require('jsonwebtoken');
 const path = require('path')
@@ -12,7 +13,7 @@ app.use(express.json())
 
 // POST ROUTE
 // add note
-app.post('/note', auth, async (req, res) => {
+app.post('/note', auth, checkPro, async (req, res) => {
     const { ncontent, ncolor, npinned, ntime } = req.body;
 
     if (ncontent === '') {
@@ -177,8 +178,9 @@ app.get('/cancel', (req, res) => {
     res.redirect('/')
 })
 
-app.post('/billing-portal', auth, async (req, res) => {
+app.get('/billing-portal', auth, async (req, res) => {
     const user = await userModel.findById(req.userId);
+    
     if (!user || !user.stripeCustomerId) {
         return res.status(400).json({ message: 'no subscription' });
     }
@@ -190,9 +192,12 @@ app.post('/billing-portal', auth, async (req, res) => {
 
     res.json({ url: portalSession.url });
 })
+
+
+
 app.delete('/notes/:id', auth, async (req, res) => {
     const id = req.params.id;
-    console.log(id)
+   // console.log(id)
     if (!id) {
         return res.status(204).json({ message: 'content not found' })
     }
@@ -252,3 +257,7 @@ app.listen(8080, () => {
     console.log(`app is listening on http://loaclhost:${8080}`);
 
 })
+
+//if user is pro user top show manage subscriotion
+// if user not pro max chracter 100, max notes 5
+// if user is pro no resrtiction 

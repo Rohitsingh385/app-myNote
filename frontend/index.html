@@ -113,6 +113,7 @@
       font-size: 12px;
       font-weight: 500;
       padding: 5px 12px;
+      margin-top: 10px;
       border-radius: 99px;
       letter-spacing: 0.04em;
       transition: background 0.3s ease;
@@ -603,6 +604,9 @@
       transform: scale(0.96);
       box-shadow: none;
     }
+    .header-right{
+      padding: 10px 10px;
+    }
   </style>
 </head>
 
@@ -616,7 +620,11 @@
         <h1>my notes</h1>
         <p>capture every thought</p>
       </div>
-      <div class="note-count" id="noteCount">0 notes</div>
+      <div class="header-right">
+         <button class="filter-btn" data-filter="blue" onclick="getSubDetails()">Manage Subscription</button>
+        <div class="note-count" id="noteCount">0 notes</div>
+       
+      </div>
     </header>
 
     <!-- Input area -->
@@ -680,6 +688,16 @@
       window.location.href = res.data.url
 
     }
+    async function getSubDetails() {
+      const res = await axios.get('http://localhost:8080/billing-portal', {
+        headers: {
+          authorization: localStorage.getItem('token')
+        }
+      })
+      window.location.href = res.data.url
+
+    }
+
 
     async function getUser() {
       const res = await axios.get('http://localhost:8080/user', {
@@ -687,13 +705,14 @@
           authorization: localStorage.getItem('token')
         }
       })
-     // console.log(res.data.user[0].plan)
+      // console.log(res.data.user[0].plan)
       if (res.data.user[0].plan === 'free') {
         document.getElementById('sub-footer').style.display = 'block'
       } else {
         document.getElementById('sub-footer').style.display = 'none'
       }
     }
+
     getUser()
     function myFunction() {
       const token = localStorage.getItem('token')
@@ -756,7 +775,7 @@
         return;
       }
       try {
-        await axios.post('http://localhost:8080/note', {
+        const response = await axios.post('http://localhost:8080/note', {
           ncontent: text,
           ncolor: activeColor,
           npinned: false
@@ -765,6 +784,7 @@
             authorization: token
           }
         })
+
 
         Toastify({
           text: "Note added!",
@@ -778,13 +798,26 @@
         ta.focus();
         render();
       } catch (error) {
-        Toastify({
-          text: "Failed to add. Please try again!",
-          className: "info",
-          style: {
-            background: "linear-gradient(to right, #00b09b, #96c93d)",
-          }
-        }).showToast();
+        // console.log(error.response)
+
+        if (error.status === 429) {
+          Toastify({
+            text: "Limit reached",
+            className: "info",
+            style: {
+              background: "linear-gradient(to right, #00b09b, #96c93d)",
+            }
+          }).showToast();
+        } else {
+          Toastify({
+            text: "Failed to add. Please try again!",
+            className: "info",
+            style: {
+              background: "linear-gradient(to right, #00b09b, #96c93d)",
+            }
+          }).showToast();
+        }
+
       }
     }
 
@@ -903,6 +936,7 @@
     });
 
     render();
+
   </script>
 </body>
 
