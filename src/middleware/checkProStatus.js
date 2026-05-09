@@ -1,5 +1,5 @@
 
-const {userModel, noteModel} = require('./model')
+const {userModel, noteModel} = require('../model')
 
 async function checkPro(req,res,next){
     const userId = req.userId;
