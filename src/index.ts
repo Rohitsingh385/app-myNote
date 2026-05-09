@@ -16,7 +16,7 @@ app.use(express.json())
 // add note
 
 
-app.post('/note', auth, checkPro, async (req, res) => {
+app.post('/note', auth, checkPro, async (req: Request, res) => {
     const { ncontent, ncolor, npinned, ntime } = req.body;
 
     if (ncontent === '') {

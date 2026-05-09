@@ -1,21 +1,27 @@
-require('dotenv').config()
+import type { Request, Response, NextFunction } from "express";
+
+import 'dotenv/config'
+
 const jwt = require('jsonwebtoken');
+
 export const JWT_SECRET = process.env.JWT_SECRET
-export function auth(req,res,next){
+
+interface AuthRequest extends Request {
+    userId?: string
+}
+
+export function auth(req: AuthRequest, res: Response, next: NextFunction) {
     const token = req.headers.authorization;
-    
-    if(!token){
-        return res.status(401).json({
-            message: 'empty token'
-        })
-    }
-    const decoded = jwt.verify(token, JWT_SECRET)
-    if(decoded){
-        req.userId =decoded.userId,
-        next()
+
+    if (typeof token == "string") {
+        const decoded: {userId: string} = jwt.verify(token, JWT_SECRET)
+        if (decoded) {
+            req.userId = decoded.userId,
+            next()
+        }
     }else{
-        res.status(403).json({
-            message: 'invalid credentials'
+        return res.status(403).json({
+            error: 'invalid credentials'
         })
     }
 }
