@@ -1,7 +1,7 @@
 require('dotenv').config()
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET
-function auth(req,res,next){
+export const JWT_SECRET = process.env.JWT_SECRET
+export function auth(req,res,next){
     const token = req.headers.authorization;
     
     if(!token){
@@ -20,6 +20,3 @@ function auth(req,res,next){
     }
 }
 
-module.exports = {
-    auth, JWT_SECRET
-}

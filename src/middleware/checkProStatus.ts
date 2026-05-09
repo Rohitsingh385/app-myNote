@@ -1,7 +1,7 @@
 
 const {userModel, noteModel} = require('../model')
 
-async function checkPro(req,res,next){
+export async function checkPro(req,res,next){
     const userId = req.userId;
    // console.log(userId)
     
@@ -18,5 +18,3 @@ async function checkPro(req,res,next){
     }
     next();
 }
-
-module.exports = {checkPro}

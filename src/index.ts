@@ -1,18 +1,21 @@
 require('dotenv').config()
-const express = require('express');
+import express from 'express';
 const app = express();
-const { auth, JWT_SECRET } = require('./authmiddleware')
-const {checkPro} = require('./checkProStatus')
-const { userModel, noteModel } = require('../model')
-const jwt = require('jsonwebtoken');
-const path = require('path')
-const bcrypt = require('bcrypt')
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+import { auth, JWT_SECRET } from './middleware/authmiddleware.js'
+import {checkPro} from './middleware/checkProStatus.js'
+import { userModel, noteModel } from './models/model.TS'
+import jwt from 'jsonwebtoken' 
+import path from 'path'
+import bcrypt from 'bcrypt'
+import Stripe from "stripe"
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
 app.use(express.json())
 
 
 // POST ROUTE
 // add note
+
+
 app.post('/note', auth, checkPro, async (req, res) => {
     const { ncontent, ncolor, npinned, ntime } = req.body;
 
