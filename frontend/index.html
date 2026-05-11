@@ -604,7 +604,8 @@
       transform: scale(0.96);
       box-shadow: none;
     }
-    .header-right{
+
+    .header-right {
       padding: 10px 10px;
     }
   </style>
@@ -621,9 +622,9 @@
         <p>capture every thought</p>
       </div>
       <div class="header-right">
-         <button class="filter-btn" data-filter="blue" onclick="getSubDetails()">Manage Subscription</button>
+        <button class="filter-btn" data-filter="blue" onclick="getSubDetails()">Manage Subscription</button>
         <div class="note-count" id="noteCount">0 notes</div>
-       
+
       </div>
     </header>
 
@@ -688,6 +689,7 @@
       window.location.href = res.data.url
 
     }
+    
     async function getSubDetails() {
       const res = await axios.get('http://localhost:8080/billing-portal', {
         headers: {

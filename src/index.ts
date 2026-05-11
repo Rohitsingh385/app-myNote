@@ -2,22 +2,59 @@ require('dotenv').config()
 import express from 'express';
 const app = express();
 import { auth, JWT_SECRET } from './middleware/authmiddleware.js'
-import {checkPro} from './middleware/checkProStatus.js'
-import { userModel, noteModel } from './models/model.TS'
-import jwt from 'jsonwebtoken' 
+import { checkPro } from './middleware/checkProStatus.js'
+import { userModel, noteModel } from './models/model.js'
+import type { Response } from "express"
+import jwt from 'jsonwebtoken'
 import path from 'path'
 import bcrypt from 'bcrypt'
 import Stripe from "stripe"
+import * as z from "zod"
+import type { AuthRequest } from './types/auth.js';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
 app.use(express.json())
 
+const noteData = z.object({
+    ncontent: z.string(),
+    ncolor: z.string(),
+    npinned: z.boolean(),
+    ntime: z.date(),
+})
 
-// POST ROUTE
-// add note
+interface noteBody {
+    ncontent: string,
+    ncolor: string,
+    npinned: boolean,
+    ntime: Date,
+}
+const signUpData = z.object({
+    uname: z.string(),
+    uemail: z.string(),
+    upassword: z.string()
+})
+interface signUpBody {
+    uname: string,
+    uemail: string,
+    upassword: string
+}
 
+const loginData = z.object({
+    uemail: z.string(),
+    upassword: z.string()
+})
+interface loginBody {
+    uemail: string,
+    upassword: string
+}
 
-app.post('/note', auth, checkPro, async (req: Request, res) => {
-    const { ncontent, ncolor, npinned, ntime } = req.body;
+const IdParamsParam = z.object({
+    id: z.string()
+})
+interface IdParams{
+    id: string
+}
+app.post('/note', auth, checkPro, async (req: AuthRequest, res: Response) => {
+    const { ncontent, ncolor, npinned, ntime }: noteBody = noteData.parse(req.body);
 
     if (ncontent === '') {
         return res.status(422).json({ message: 'missing field' })
@@ -30,14 +67,15 @@ app.post('/note', auth, checkPro, async (req: Request, res) => {
         userId: req.userId
     })
 
-    return res.status(200).json({ message: 'note created' })
+    return res.status(200).json({ newNote })
 })
 
-// singup 
-app.post('/signup', async (req, res) => {
-    const { uname, uemail, upassword } = req.body;
+// signup 
+app.post('/signup', async (req: AuthRequest, res: Response) => {
 
-    if (!uname || !uemail || !upassword) {
+    const { uname, uemail, upassword } : signUpBody = signUpData.parse(req.body);
+
+    if (uname === '' || uemail === '' || upassword === '') {
         return res.status(400).json({ message: 'username email password required' })
     }
 
@@ -69,9 +107,10 @@ app.post('/signup', async (req, res) => {
 
 })
 
-// singin
-app.post('/login', async (req, res) => {
-    const { uemail, upassword } = req.body;
+// signin
+app.post('/login', async (req: AuthRequest, res: Response) => {
+    
+    const { uemail, upassword }: loginBody = loginData.parse(req.body);
 
     if (!uemail || !upassword) {
         return res.status(400).json({ message: 'username email password required' })
@@ -80,8 +119,6 @@ app.post('/login', async (req, res) => {
     if (upassword.length < 8) {
         return res.status(400).json({ message: 'password must be 8 characters' })
     }
-    const token = req.headers.authorization;
-
 
     const user = await userModel.findOne({ email: uemail })
 
@@ -108,13 +145,7 @@ app.post('/login', async (req, res) => {
 
 })
 
-
-app.post('/subscribe', auth, async (req, res) => {
-    const { plan } = req.body;
-
-    if (!plan || plan.toLowerCase() !== 'pro') {
-        return res.status(400).json({ message: 'invalid plan' });
-    }
+app.post('/subscribe', auth, async (req: AuthRequest, res: Response) => {
 
     const user = await userModel.findById(req.userId);
     if (!user) {
@@ -149,7 +180,7 @@ app.post('/subscribe', auth, async (req, res) => {
     res.json({ url: session.url });
 })
 
-app.get('/success', async (req, res) => {
+app.get('/success', async (req: AuthRequest, res: Response) => {
     const sessionId = req.query.session_id;
     if (!sessionId) {
         return res.status(400).send('Invalid session');
@@ -168,7 +199,7 @@ app.get('/success', async (req, res) => {
     res.redirect('http://localhost/');
 })
 
-app.get('/user', auth, async (req, res) => {
+app.get('/user', auth, async (req: AuthRequest, res: Response) => {
 
     const userId = req.userId;
 
@@ -181,9 +212,9 @@ app.get('/cancel', (req, res) => {
     res.redirect('/')
 })
 
-app.get('/billing-portal', auth, async (req, res) => {
+app.get('/billing-portal', auth, async (req: AuthRequest, res: Response) => {
     const user = await userModel.findById(req.userId);
-    
+
     if (!user || !user.stripeCustomerId) {
         return res.status(400).json({ message: 'no subscription' });
     }
@@ -196,16 +227,12 @@ app.get('/billing-portal', auth, async (req, res) => {
     res.json({ url: portalSession.url });
 })
 
+app.delete('/notes/:id', auth, async (req: AuthRequest, res: Response) => {
+    const validatedParams : IdParams = IdParamsParam.parse(req.params);
+    // console.log(id)
+  
 
-
-app.delete('/notes/:id', auth, async (req, res) => {
-    const id = req.params.id;
-   // console.log(id)
-    if (!id) {
-        return res.status(204).json({ message: 'content not found' })
-    }
-
-    const response = await noteModel.findByIdAndDelete(id)
+    const response = await noteModel.findByIdAndDelete(validatedParams.id)
     if (response) {
         return res.status(201).json({ message: 'note delted' })
     }
@@ -215,23 +242,25 @@ app.delete('/notes/:id', auth, async (req, res) => {
 
 })
 
-app.put('/pin/:id', auth, async (req, res) => {
-    const id = req.query.id;
+app.put('/pin/:id', auth, async (req: AuthRequest, res: Response) => {
+    const validatedParams: IdParams = IdParamsParam.parse(req.params);
 
-    if (!id) {
-        return res.json({ message: 'empmty id' })
+    const note = await noteModel.findById(validatedParams.id);
+   
+
+    if(note.pinned === false){
+        note.pinned = true;
+    }else{
+        note.pinned = false;
     }
-    const note = await noteModel.findById(id);
-    if (!note) {
-        return res.json({ message: 'empmty id' })
-    }
-    const updatedTodo = await noteModel.findByIdAndUpdate(id,)
+    await note.save();
+
+
 })
-
 
 // GET ROUTES
 // get notes auth
-app.get('/notes', auth, async (req, res) => {
+app.get('/notes', auth, async (req: AuthRequest, res: Response) => {
     const userNotes = await noteModel.find({ userId: req.userId });
     return res.status(200).json({ notes: userNotes })
 })

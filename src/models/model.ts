@@ -1,6 +1,20 @@
-const mongoose = require('mongoose')
-const bcrypt = require('bcrypt')
+import mongoose, { Document } from 'mongoose'
 mongoose.connect('mongodb://localhost:27017/mytodo')
+interface user extends Document {
+    username: string,
+    email: string,
+    password: string,
+    plan: string,
+    stripeCustomerId: string,
+    planExpiresAt: Date
+}
+
+interface notes {
+    userId: string,
+    content: string,
+    pinned: boolean,
+    time: Date,
+}
 const userSchema = new mongoose.Schema({
     username: {
         type: String,
@@ -43,13 +57,8 @@ const noteSchema = new mongoose.Schema({
     time: { type: Date, default: Date.now }
 })
 
-const userModel = mongoose.model('User', userSchema);
+export const userModel = mongoose.model<user>('User', userSchema);
 
-const noteModel = mongoose.model('Note', noteSchema);
+export const noteModel = mongoose.model<notes>('Note', noteSchema);
 
 
-
-module.exports = {
-    userModel,
-    noteModel
-}
